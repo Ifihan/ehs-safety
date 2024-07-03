@@ -10,22 +10,31 @@ model = YOLO("models/best.pt")
 
 # Define the list of all classes
 all_classes = [
-    "extinguisher", "harness", "helment", "left-boot", 
-    "left-glove", "right-boot", "right-glove", "safety-box", "vest"
+    "extinguisher",
+    "harness",
+    "helment",
+    "left-boot",
+    "left-glove",
+    "right-boot",
+    "right-glove",
+    "safety-box",
+    "vest",
 ]
 
-@app.route('/')
-def index():
-    return render_template('index.html')
 
-@app.route('/detect', methods=['POST'])
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+
+@app.route("/detect", methods=["POST"])
 def detect():
-    if 'file' not in request.files:
+    if "file" not in request.files:
         return jsonify({"error": "No file part"})
-    file = request.files['file']
-    if file.filename == '':
+    file = request.files["file"]
+    if file.filename == "":
         return jsonify({"error": "No selected file"})
-    
+
     if file:
         img_bytes = np.fromfile(file, np.uint8)
         img = cv2.imdecode(img_bytes, cv2.IMREAD_COLOR)
@@ -41,14 +50,17 @@ def detect():
         # Determine missing classes
         missing_classes = list(set(all_classes) - detected_classes)
 
-        return jsonify({
-            "detected": list(detected_classes),
-            "missing": missing_classes,
-            "message": (
-                f"The following are the detected items: {', '.join(list(detected_classes))}.\n"
-                f"The following are the missing items: {', '.join(missing_classes)}."
-            )
-        })
+        return jsonify(
+            {
+                "detected": list(detected_classes),
+                "missing": list(missing_classes),
+                "message": (
+                    f"The following are the detected items: {', '.join(list(detected_classes))}\n"
+                    f"The following are the missing items: {', '.join(missing_classes)}"
+                ),
+            }
+        )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     app.run(debug=True)

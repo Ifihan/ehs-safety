@@ -2,47 +2,13 @@
 <html>
 <head>
     <title>YOLO Detection</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f8f9fa;
-        }
-        h1 {
-            text-align: center;
-            color: #343a40;
-        }
-        form {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        input[type="file"] {
-            margin-bottom: 10px;
-        }
-        img {
-            max-width: 30%; /* Adjusted to make the preview smaller */
-            height: auto;
-            margin-top: 20px;
-            border: 1px solid #ddd;
-            padding: 10px;
-            background-color: #fff;
-        }
-        #results {
-            margin-top: 20px;
-            white-space: pre-wrap;
-            background-color: #fff;
-            border: 1px solid #ddd;
-            padding: 10px;
-        }
-    </style>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <h1>Upload an Image for YOLO Detection</h1>
+    <h1>Upload or Take a Picture for approval</h1>
     <form action="/detect" method="post" enctype="multipart/form-data" id="upload-form">
         <input type="file" name="file" accept="image/*" id="file-input">
+        <button type="button" id="camera-button">Take Picture</button>
         <input type="submit" value="Upload">
     </form>
     <div>
@@ -50,33 +16,9 @@
     </div>
     <div id="results"></div>
 
-    <script>
-        document.getElementById('file-input').onchange = function (event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    const preview = document.getElementById('preview');
-                    preview.src = e.target.result;
-                    preview.style.display = 'block';
-                }
-                reader.readAsDataURL(file);
-            }
-        };
+    <video id="camera" style="display: none;" autoplay></video>
+    <canvas id="canvas" style="display: none;"></canvas>
 
-        document.getElementById('upload-form').onsubmit = async function(e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            const response = await fetch('/detect', {
-                method: 'POST',
-                body: formData
-            });
-            const data = await response.json();
-            document.getElementById('results').innerText = data.message;
-            
-            // Scroll to the results
-            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
-        };
-    </script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>
