@@ -14,10 +14,20 @@ app = Flask(__name__)
 model = YOLO("models/best.pt")
 
 # Define the list of all classes
-all_classes = [
+tower_classes = [
     "extinguisher",
     "harness",
-    "helment",
+    "helmet",
+    "left-boot",
+    "left-glove",
+    "right-boot",
+    "right-glove",
+    "safety-box",
+    "vest",
+]
+ground_classes = [
+    "extinguisher",
+    "helmet",
     "left-boot",
     "left-glove",
     "right-boot",
@@ -30,11 +40,6 @@ all_classes = [
 cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME")
 api_key = os.getenv("CLOUDINARY_API_KEY")
 api_secret = os.getenv("CLOUDINARY_API_SECRET")
-
-# Debugging prints
-print("Cloudinary Cloud Name:", cloud_name)
-print("Cloudinary API Key:", api_key)
-print("Cloudinary API Secret:", api_secret)
 
 
 @app.route("/")
@@ -62,12 +67,20 @@ def get_signature():
 
 @app.route("/detect", methods=["POST"])
 def detect():
-    print("Headers:", request.headers)  # Debugging line
     data = request.get_json()
-    print("Request Data:", data)  # Debugging line
     image_url = data.get("image_url")
+    location = data.get("location")
     if not image_url:
         return jsonify({"error": "No image URL provided"}), 400
+    if not location:
+        return jsonify({"error": "No location provided"}), 400
+
+    if location == "tower":
+        classes = tower_classes
+    elif location == "ground":
+        classes = ground_classes
+    else:
+        return jsonify({"error": "Invalid location"}), 400
 
     # Download the image from Cloudinary
     response = requests.get(image_url)
@@ -83,7 +96,7 @@ def detect():
             detected_classes.add(result.names[class_index])
 
     # Determine missing classes
-    missing_classes = list(set(all_classes) - detected_classes)
+    missing_classes = list(set(classes) - detected_classes)
 
     return jsonify(
         {

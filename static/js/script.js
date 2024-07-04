@@ -1,16 +1,3 @@
-document.getElementById('file-input').onchange = function (event) {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-            const preview = document.getElementById('preview');
-            preview.src = e.target.result;
-            preview.style.display = 'block';
-        }
-        reader.readAsDataURL(file);
-    }
-};
-
 document.getElementById('camera-button').onclick = function () {
     startCamera();
 };
@@ -72,14 +59,25 @@ document.getElementById('upload-form').onsubmit = async function (e) {
     e.preventDefault();
 
     const fileInput = document.getElementById('file-input');
+    const selectedLocation = document.querySelector('input[name="location"]:checked');
+    const submitButton = document.getElementById('submit-button');
+    const spinner = document.getElementById('spinner');
+
+    if (!selectedLocation) {
+        alert('Please select a location option.');
+        return;
+    }
+
     if (fileInput.files.length === 0) {
         alert('Please upload or capture an image before submitting.');
         return;
     }
 
+    submitButton.disabled = true;
+    spinner.style.display = 'inline-block';
+
     const signatureResponse = await fetch('/signature');
     const signatureData = await signatureResponse.json();
-    console.log("Signature Data:", signatureData);  // Debugging line
     
     const file = fileInput.files[0];
     const formData = new FormData();
@@ -94,7 +92,6 @@ document.getElementById('upload-form').onsubmit = async function (e) {
     });
 
     const cloudinaryData = await cloudinaryResponse.json();
-    console.log("Cloudinary Data:", cloudinaryData);  // Debugging line
     const imageUrl = cloudinaryData.secure_url;
 
     const response = await fetch('/detect', {
@@ -102,11 +99,13 @@ document.getElementById('upload-form').onsubmit = async function (e) {
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ image_url: imageUrl })
+        body: JSON.stringify({ image_url: imageUrl, location: selectedLocation.value })
     });
 
     const data = await response.json();
-    console.log("Detect Response Data:", data);  // Debugging line
+
+    spinner.style.display = 'none';
+    submitButton.disabled = false;
 
     const resultsDiv = document.getElementById('results');
     resultsDiv.innerHTML = `
@@ -120,6 +119,49 @@ document.getElementById('upload-form').onsubmit = async function (e) {
         </div>
     `;
 
+    showModal(data);
+
     // Scroll to the results
     resultsDiv.scrollIntoView({ behavior: 'smooth' });
 };
+
+function showModal(data) {
+    const modal = document.getElementById('modal');
+    const modalMessage = document.getElementById('modal-message');
+    const modalActionButton = document.getElementById('modal-action-button');
+    const closeButton = document.querySelector('.close-button');
+
+    if (data.missing.length === 0) {
+        modalMessage.textContent = "You are fit for the task!";
+        modalActionButton.textContent = "Close";
+    } else if (data.missing.length <= 2) {
+        modalMessage.textContent = "Warning: Please retake the picture.";
+        modalActionButton.textContent = "Try Again";
+    } else {
+        modalMessage.innerHTML = "<span style='color: red;'>You are not fit for the task.</span>";
+        modalActionButton.textContent = "Try Again";
+    }
+
+    modal.style.display = "block";
+
+    closeButton.onclick = function() {
+        modal.style.display = "none";
+    }
+
+    modalActionButton.onclick = function() {
+        if (modalActionButton.textContent === "Try Again") {
+            modal.style.display = "none";
+            const video = document.getElementById('camera');
+            video.style.display = 'none';
+            document.getElementById('preview').style.display = 'none';
+        } else {
+            modal.style.display = "none";
+        }
+    }
+
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+}

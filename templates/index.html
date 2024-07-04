@@ -3,21 +3,48 @@
 <head>
     <title>YOLO Detection</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
-    <h1>Upload or Take a Picture for approval</h1>
+    <h1>Take a picture for approval</h1>
     <form action="/detect" method="post" enctype="multipart/form-data" id="upload-form">
-        <input type="file" name="file" accept="image/*" id="file-input">
-        <button type="button" id="camera-button">Take Picture</button>
-        <input type="submit" value="Upload">
+        <div class="container">
+            <div class="options">
+                <p>Pick an option</p>
+                <label>
+                    <input type="radio" name="location" value="tower"> On Tower
+                </label>
+                <label>
+                    <input type="radio" name="location" value="ground"> On Ground
+                </label>
+            </div>
+            <div class="camera-container">
+                <div class="camera-interface">
+                    <video id="camera" autoplay></video>
+                    <canvas id="canvas" style="display: none;"></canvas>
+                    <img id="preview" src="#" alt="Image Preview" style="display: none;">
+                </div>
+                <div class="buttons">
+                    <input type="file" id="file-input" style="display: none;">
+                    <button type="button" id="camera-button">Take Picture</button>
+                    <button type="submit" id="submit-button">
+                        Submit
+                        <i class="fas fa-spinner fa-spin" id="spinner" style="display: none;"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
     </form>
-    <div>
-        <img id="preview" src="#" alt="Image Preview" style="display: none;">
-    </div>
     <div id="results"></div>
 
-    <video id="camera" style="display: none;" autoplay></video>
-    <canvas id="canvas" style="display: none;"></canvas>
+    <!-- Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <p id="modal-message"></p>
+            <button id="modal-action-button">Try Again</button>
+        </div>
+    </div>
 
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
