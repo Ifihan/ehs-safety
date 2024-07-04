@@ -1,3 +1,4 @@
 # models/
 env/
 .DS_Store
+.env

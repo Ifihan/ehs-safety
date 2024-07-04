@@ -77,12 +77,36 @@ document.getElementById('upload-form').onsubmit = async function (e) {
         return;
     }
 
-    const formData = new FormData(this);
-    const response = await fetch('/detect', {
+    const signatureResponse = await fetch('/signature');
+    const signatureData = await signatureResponse.json();
+    console.log("Signature Data:", signatureData);  // Debugging line
+    
+    const file = fileInput.files[0];
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('api_key', signatureData.api_key);
+    formData.append('timestamp', signatureData.timestamp);
+    formData.append('signature', signatureData.signature);
+
+    const cloudinaryResponse = await fetch(`https://api.cloudinary.com/v1_1/${signatureData.cloud_name}/upload`, {
         method: 'POST',
         body: formData
     });
+
+    const cloudinaryData = await cloudinaryResponse.json();
+    console.log("Cloudinary Data:", cloudinaryData);  // Debugging line
+    const imageUrl = cloudinaryData.secure_url;
+
+    const response = await fetch('/detect', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ image_url: imageUrl })
+    });
+
     const data = await response.json();
+    console.log("Detect Response Data:", data);  // Debugging line
 
     const resultsDiv = document.getElementById('results');
     resultsDiv.innerHTML = `
