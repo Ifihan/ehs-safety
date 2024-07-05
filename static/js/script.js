@@ -5,7 +5,6 @@ document.getElementById('camera-button').onclick = function () {
 function startCamera() {
     const video = document.getElementById('camera');
     const canvas = document.getElementById('canvas');
-    const preview = document.getElementById('preview');
 
     navigator.mediaDevices.getUserMedia({ video: true })
         .then(function (stream) {
@@ -15,7 +14,7 @@ function startCamera() {
             document.getElementById('camera-button').textContent = 'Capture Picture';
 
             document.getElementById('camera-button').onclick = function () {
-                capturePicture();
+                capturePicture(stream);
             };
         })
         .catch(function (err) {
@@ -23,36 +22,78 @@ function startCamera() {
         });
 }
 
-function capturePicture() {
+function capturePicture(stream) {
     const video = document.getElementById('camera');
     const canvas = document.getElementById('canvas');
-    const preview = document.getElementById('preview');
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    canvas.getContext('2d').drawImage(video, 0, 0);
-
-    video.srcObject.getTracks().forEach(track => track.stop());
-    video.style.display = 'none';
+    const context = canvas.getContext('2d');
+    context.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas before drawing
+    context.drawImage(video, 0, 0);
 
     const dataUrl = canvas.toDataURL('image/png');
-    preview.src = dataUrl;
-    preview.style.display = 'block';
-
+    
     fetch(dataUrl)
         .then(res => res.blob())
         .then(blob => {
             const fileInput = document.getElementById('file-input');
-            const file = new File([blob], 'photo.png', { type: 'image/png' });
+            const file = new File([blob], `photo_${Date.now()}.png`, { type: 'image/png' });
             const dataTransfer = new DataTransfer();
+            for (const existingFile of fileInput.files) {
+                dataTransfer.items.add(existingFile);
+            }
             dataTransfer.items.add(file);
             fileInput.files = dataTransfer.files;
 
+            displayPreviews();
+
+            video.srcObject.getTracks().forEach(track => track.stop());
+            video.style.display = 'none';
             document.getElementById('camera-button').textContent = 'Take Picture';
             document.getElementById('camera-button').onclick = function () {
                 startCamera();
             };
         });
+}
+
+function displayPreviews() {
+    const fileInput = document.getElementById('file-input');
+    const previewContainer = document.getElementById('preview-container');
+    previewContainer.innerHTML = '';
+
+    for (let i = 0; i < fileInput.files.length; i++) {
+        const file = fileInput.files[i];
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const previewItem = document.createElement('div');
+            previewItem.className = 'preview-item';
+            previewItem.innerHTML = `
+                <img src="${e.target.result}" alt="Image Preview">
+                <button class="delete-button" data-index="${i}">&times;</button>
+            `;
+            previewContainer.appendChild(previewItem);
+
+            previewItem.querySelector('.delete-button').onclick = function () {
+                deleteImage(i);
+            };
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function deleteImage(index) {
+    const fileInput = document.getElementById('file-input');
+    const dataTransfer = new DataTransfer();
+
+    for (let i = 0; i < fileInput.files.length; i++) {
+        if (i !== index) {
+            dataTransfer.items.add(fileInput.files[i]);
+        }
+    }
+
+    fileInput.files = dataTransfer.files;
+    displayPreviews();
 }
 
 document.getElementById('upload-form').onsubmit = async function (e) {
@@ -79,27 +120,29 @@ document.getElementById('upload-form').onsubmit = async function (e) {
     const signatureResponse = await fetch('/signature');
     const signatureData = await signatureResponse.json();
     
-    const file = fileInput.files[0];
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('api_key', signatureData.api_key);
-    formData.append('timestamp', signatureData.timestamp);
-    formData.append('signature', signatureData.signature);
+    const imageUrls = [];
+    for (const file of fileInput.files) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('api_key', signatureData.api_key);
+        formData.append('timestamp', signatureData.timestamp);
+        formData.append('signature', signatureData.signature);
 
-    const cloudinaryResponse = await fetch(`https://api.cloudinary.com/v1_1/${signatureData.cloud_name}/upload`, {
-        method: 'POST',
-        body: formData
-    });
+        const cloudinaryResponse = await fetch(`https://api.cloudinary.com/v1_1/${signatureData.cloud_name}/image/upload`, {
+            method: 'POST',
+            body: formData
+        });
 
-    const cloudinaryData = await cloudinaryResponse.json();
-    const imageUrl = cloudinaryData.secure_url;
+        const cloudinaryData = await cloudinaryResponse.json();
+        imageUrls.push(cloudinaryData.secure_url);
+    }
 
     const response = await fetch('/detect', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ image_url: imageUrl, location: selectedLocation.value })
+        body: JSON.stringify({ image_urls: imageUrls, location: selectedLocation.value })
     });
 
     const data = await response.json();
@@ -134,11 +177,12 @@ function showModal(data) {
     if (data.missing.length === 0) {
         modalMessage.textContent = "You are fit for the task!";
         modalActionButton.textContent = "Close";
-    } else if (data.missing.length <= 2) {
-        modalMessage.textContent = "Warning: Please retake the picture.";
-        modalActionButton.textContent = "Try Again";
     } else {
-        modalMessage.innerHTML = "<span style='color: red;'>You are not fit for the task.</span>";
+        modalMessage.innerHTML = `
+            <span style='color: red;'>You are not fit for the task.</span>
+            <br>
+            <span>Please try again and make sure to capture all required items.</span>
+        `;
         modalActionButton.textContent = "Try Again";
     }
 
@@ -149,14 +193,8 @@ function showModal(data) {
     }
 
     modalActionButton.onclick = function() {
-        if (modalActionButton.textContent === "Try Again") {
-            modal.style.display = "none";
-            const video = document.getElementById('camera');
-            video.style.display = 'none';
-            document.getElementById('preview').style.display = 'none';
-        } else {
-            modal.style.display = "none";
-        }
+        modal.style.display = "none";
+        resetUI();
     }
 
     window.onclick = function(event) {
@@ -165,3 +203,32 @@ function showModal(data) {
         }
     }
 }
+
+function resetUI() {
+    const fileInput = document.getElementById('file-input');
+    const previewContainer = document.getElementById('preview-container');
+    const video = document.getElementById('camera');
+    const preview = document.getElementById('preview');
+    const resultsDiv = document.getElementById('results');
+
+    // Clear the file input
+    const dataTransfer = new DataTransfer();
+    fileInput.files = dataTransfer.files;
+
+    // Clear the preview container
+    previewContainer.innerHTML = '';
+
+    // Clear the results section
+    resultsDiv.innerHTML = '';
+
+    // Hide the video and preview elements
+    video.style.display = 'none';
+    preview.style.display = 'none';
+
+    // Reset the camera button text and functionality
+    document.getElementById('camera-button').textContent = 'Take Picture';
+    document.getElementById('camera-button').onclick = function () {
+        startCamera();
+    };
+}
+

@@ -6,7 +6,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
-    <h1>Take a picture for approval</h1>
+    <h1>Take pictures for approval</h1>
     <form action="/detect" method="post" enctype="multipart/form-data" id="upload-form">
         <div class="container">
             <div class="options">
@@ -22,10 +22,9 @@
                 <div class="camera-interface">
                     <video id="camera" autoplay></video>
                     <canvas id="canvas" style="display: none;"></canvas>
-                    <img id="preview" src="#" alt="Image Preview" style="display: none;">
                 </div>
                 <div class="buttons">
-                    <input type="file" id="file-input" style="display: none;">
+                    <input type="file" id="file-input" multiple style="display: none;">
                     <button type="button" id="camera-button">Take Picture</button>
                     <button type="submit" id="submit-button">
                         Submit
@@ -35,6 +34,7 @@
             </div>
         </div>
     </form>
+    <div id="preview-container"></div>
     <div id="results"></div>
 
     <!-- Modal -->

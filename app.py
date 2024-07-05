@@ -68,10 +68,10 @@ def get_signature():
 @app.route("/detect", methods=["POST"])
 def detect():
     data = request.get_json()
-    image_url = data.get("image_url")
+    image_urls = data.get("image_urls")
     location = data.get("location")
-    if not image_url:
-        return jsonify({"error": "No image URL provided"}), 400
+    if not image_urls:
+        return jsonify({"error": "No image URLs provided"}), 400
     if not location:
         return jsonify({"error": "No location provided"}), 400
 
@@ -82,18 +82,19 @@ def detect():
     else:
         return jsonify({"error": "Invalid location"}), 400
 
-    # Download the image from Cloudinary
-    response = requests.get(image_url)
-    img_array = np.asarray(bytearray(response.content), dtype=np.uint8)
-    img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
-
-    # Run YOLO detection
-    results = model(img)
     detected_classes = set()
-    for result in results:
-        for box in result.boxes:
-            class_index = int(box.cls.item())  # Convert tensor to int
-            detected_classes.add(result.names[class_index])
+    for image_url in image_urls:
+        # Download the image from Cloudinary
+        response = requests.get(image_url)
+        img_array = np.asarray(bytearray(response.content), dtype=np.uint8)
+        img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+
+        # Run YOLO detection
+        results = model(img)
+        for result in results:
+            for box in result.boxes:
+                class_index = int(box.cls.item())  # Convert tensor to int
+                detected_classes.add(result.names[class_index])
 
     # Determine missing classes
     missing_classes = list(set(classes) - detected_classes)
