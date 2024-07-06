@@ -16,6 +16,8 @@ function startCamera() {
             document.getElementById('camera-button').onclick = function () {
                 capturePicture(stream);
             };
+
+            disableOptions();
         })
         .catch(function (err) {
             console.error('Error accessing camera: ', err);
@@ -94,6 +96,11 @@ function deleteImage(index) {
 
     fileInput.files = dataTransfer.files;
     displayPreviews();
+
+    // Re-enable options if all images are deleted
+    if (fileInput.files.length === 0) {
+        enableOptions();
+    }
 }
 
 document.getElementById('upload-form').onsubmit = async function (e) {
@@ -128,7 +135,7 @@ document.getElementById('upload-form').onsubmit = async function (e) {
         formData.append('timestamp', signatureData.timestamp);
         formData.append('signature', signatureData.signature);
 
-        const cloudinaryResponse = await fetch(`https://api.cloudinary.com/v1_1/${signatureData.cloud_name}/image/upload`, {
+        const cloudinaryResponse = await fetch(`https://api.cloudinary.com/v1_1/${signatureData.cloud_name}/upload`, {
             method: 'POST',
             body: formData
         });
@@ -225,6 +232,9 @@ function resetUI() {
     video.style.display = 'none';
     preview.style.display = 'none';
 
+    // Re-enable the options
+    enableOptions();
+
     // Reset the camera button text and functionality
     document.getElementById('camera-button').textContent = 'Take Picture';
     document.getElementById('camera-button').onclick = function () {
@@ -232,3 +242,49 @@ function resetUI() {
     };
 }
 
+function disableOptions() {
+    const radioButtons = document.querySelectorAll('input[name="location"]');
+    radioButtons.forEach(button => {
+        button.disabled = true;
+    });
+}
+
+function enableOptions() {
+    const radioButtons = document.querySelectorAll('input[name="location"]');
+    radioButtons.forEach(button => {
+        button.disabled = false;
+    });
+}
+
+// Handle radio button clicks
+const radioButtons = document.querySelectorAll('input[name="location"]');
+radioButtons.forEach(button => {
+    button.onclick = function () {
+        if (document.getElementById('file-input').files.length > 0) {
+            showOptionPopup();
+            return false; // Prevent changing the option
+        }
+    };
+});
+
+function showOptionPopup() {
+    const popup = document.getElementById('option-popup');
+    const closePopupButton = document.querySelector('.close-popup-button');
+    const popupOkButton = document.getElementById('popup-ok-button');
+
+    popup.style.display = 'block';
+
+    closePopupButton.onclick = function() {
+        popup.style.display = 'none';
+    }
+
+    popupOkButton.onclick = function() {
+        popup.style.display = 'none';
+    }
+
+    window.onclick = function(event) {
+        if (event.target == popup) {
+            popup.style.display = 'none';
+        }
+    }
+}

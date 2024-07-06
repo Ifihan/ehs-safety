@@ -83,32 +83,43 @@ def detect():
         return jsonify({"error": "Invalid location"}), 400
 
     detected_classes = set()
-    for image_url in image_urls:
-        # Download the image from Cloudinary
-        response = requests.get(image_url)
-        img_array = np.asarray(bytearray(response.content), dtype=np.uint8)
-        img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+    # for image_url in image_urls:
+    #     # Download the image from Cloudinary
+    #     response = requests.get(image_url)
+    #     img_array = np.asarray(bytearray(response.content), dtype=np.uint8)
+    #     img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
 
-        # Run YOLO detection
-        results = model(img)
-        for result in results:
-            for box in result.boxes:
-                class_index = int(box.cls.item())  # Convert tensor to int
-                detected_classes.add(result.names[class_index])
+    #     # Run YOLO detection
+    #     results = model(img)
+    #     for result in results:
+    #         for box in result.boxes:
+    #             class_index = int(box.cls.item())  # Convert tensor to int
+    #             detected_classes.add(result.names[class_index])
 
-    # Determine missing classes
-    missing_classes = list(set(classes) - detected_classes)
+    # # Determine missing classes
+    # missing_classes = list(set(classes) - detected_classes)
 
     return jsonify(
         {
-            "detected": list(detected_classes),
-            "missing": list(missing_classes),
+            "detected": [],
+            "missing": [],
             "message": (
-                f"The following are the detected items: {', '.join(list(detected_classes))}\n"
-                f"The following are the missing items: {', '.join(missing_classes)}"
+                "The following are the detected items: {}\n"
+                "The following are the missing items: {}"
             ),
         }
     )
+
+    # return jsonify(
+    #     {
+    #         "detected": list(detected_classes),
+    #         "missing": list(missing_classes),
+    #         "message": (
+    #             f"The following are the detected items: {', '.join(list(detected_classes))}\n"
+    #             f"The following are the missing items: {', '.join(missing_classes)}"
+    #         ),
+    #     }
+    # )
 
 
 if __name__ == "__main__":
