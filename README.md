@@ -50,7 +50,19 @@ pip install -r requirements.txt
 - Create a .env file based on the .env.example file.
 - Add your secret keys and other configuration information.
 
-5. Run the application:
+5. Export the keys from the .env file to the environment (terminal) line by line:
+```bash
+export CLOUDINARY_CLOUD_NAME=name
+```
+```bash
+export CLOUDINARY_API_KEY=apikey
+```
+```bash
+export CLOUDINARY_API_SECRET=apisecret
+```
+
+
+6. Run the application:
 
 ```bash
 python app.py
