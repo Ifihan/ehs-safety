@@ -112,7 +112,7 @@ document.getElementById('upload-form').onsubmit = async function (e) {
     const spinner = document.getElementById('spinner');
 
     if (!selectedLocation) {
-        alert('Please select a location option.');
+        alert('Please select a work type option.');
         return;
     }
 
@@ -201,7 +201,11 @@ function showModal(data) {
 
     modalActionButton.onclick = function() {
         modal.style.display = "none";
-        resetUI();
+         //resetUI(); did not want to waste time checking why I could not change the option when the reset UI happens hence I just reload the page
+         // We can check this out later 
+        // This will refresh the current webpage
+        window.location.reload();
+
     }
 
     window.onclick = function(event) {
